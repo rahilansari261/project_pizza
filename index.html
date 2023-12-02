@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍕 CSV/XLSX File Reader 🤤</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    label {
+      background-color: #3498db;
+      color: #fff;
+      padding: 10px 15px;
+      cursor: pointer;
+    }
+
+    .sample-button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      margin-top: 10px;
+      cursor: pointer;
+      border: none;
+      border-radius: 5px;
+    }
+
+    .section_1 {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .table_div {
+      width: 100%;
+      overflow-x: auto; /* Add horizontal scroll to the container */
+    }
+
+    table {
+      margin-top: 20px;
+      border-collapse: collapse;
+      border: 1px solid #3498db;
+      table-layout: auto;
+      white-space: nowrap; /* Prevent text wrapping in cells */
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #3498db;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      background-color: #3498db;
+      color: #fff;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/js-confetti@0.11.0/dist/js-confetti.browser.min.js"></script>
+</head>
+<body>
+  <div class="section_1">
+    <h1>🍕 CSV/XLSX File Reader 🤤</h1>
+    <input type="file" id="file-input" accept=".csv, .xlsx">
+    <label for="file-input" id="file-label">Choose File</label>
+    <p>If you don't have a CSV or XLSX file on your computer, you have the option to load sample files. No data is sent to the backend, as there is no backend involved in this scenario or any way.</p>
+    <button class="sample-button" onclick="loadSampleFile('Sample-CSV.csv')">Load Sample CSV</button>
+    <button class="sample-button" onclick="loadSampleFile('Sample-XLSX.xlsx')">Load Sample XLSX</button>
+  </div>
+  <div class="table_div">
+    <table>
+      <thead>
+        <tr></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+  <script>
+    const confettiSettings = {
+      target: 'confettiButton',
+    };
+    const jsConfetti = new JSConfetti(confettiSettings);
+
+    function handleFile(event) {
+      const file = event.target.files[0];
+
+      if (file) {
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          const content = e.target.result;
+
+          if (file.name.endsWith('.csv')) {
+            parseCSV(content);
+          } else if (file.name.endsWith('.xlsx')) {
+            parseXLSX(content);
+          } else {
+            alert('Unsupported file format. Please select a CSV or XLSX file.');
+          }
+        };
+
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    function loadSampleFile(fileName) {
+      // Assuming the sample files are in the same directory as index.html
+      console.log(fileName)
+      fetch(fileName)
+        .then(response => response.blob())
+        .then(blob => {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const content = e.target.result;
+
+            if (fileName.endsWith('.csv')) {
+              parseCSV(content);
+            } else if (fileName.endsWith('.xlsx')) {
+              parseXLSX(content);
+            } else {
+              alert('Unsupported file format. Please select a CSV or XLSX file.');
+            }
+          };
+
+          reader.readAsArrayBuffer(blob);
+        })
+        .catch(error => console.error('Error loading sample file:', error));
+    }
+
+    function parseCSV(content) {
+      const text = new TextDecoder().decode(content);
+      const lines = text.split('\n');
+      const headers = lines[0].split(',');
+
+      displayHeadersAndData(headers, lines.slice(1).map(row => row.split(',')));
+      jsConfetti.addConfetti({
+        emojis: ['🍕'],
+        emojiSize: 100,
+        confettiNumber: 30,
+      });
+    }
+
+    function parseXLSX(content) {
+      const data = new Uint8Array(content);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+      const headers = jsonData[0];
+      const rows = jsonData.slice(1);
+
+      displayHeadersAndData(headers, rows);
+      jsConfetti.addConfetti({
+        emojis: ['🍕'],
+        emojiSize: 40,
+        confettiNumber: 300,
+      });
+    }
+
+    function displayHeadersAndData(headers, rows) {
+      const tableHead = document.querySelector('table thead tr');
+      tableHead.innerHTML = '';
+
+      headers.forEach(header => {
+        const th = document.createElement('th');
+        th.textContent = header;
+        tableHead.appendChild(th);
+      });
+
+      const tableBody = document.querySelector('table tbody');
+      tableBody.innerHTML = '';
+
+      rows.forEach(rowData => {
+        const tr = document.createElement('tr');
+        rowData.forEach(cellData => {
+          const td = document.createElement('td');
+          td.textContent = cellData;
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('file-input').addEventListener('change', handleFile);
+    });
+  </script>
+</body>
+</html>
